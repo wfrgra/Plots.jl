@@ -380,6 +380,10 @@ const _axis_defaults = KW(
     :gridalpha                => 0.1,
     :gridstyle                => :solid,
     :gridlinewidth            => 0.5,
+    :foreground_color_minor_grid => :match,            # grid color
+    :minorgridalpha           => 0.1,
+    :minorgridstyle           => :solid,
+    :minorgridlinewidth       => 0.5,
     :tick_direction           => :in,
     :minorticks               => false,
     :minorgrid                => false,
@@ -500,6 +504,8 @@ add_aliases(:foreground_color_subplot, :fg_subplot, :fgsubplot, :fgcolor_subplot
                             :foreground_colour_subplot, :fgcolour_subplot, :fg_colour_subplot)
 add_aliases(:foreground_color_grid, :fg_grid, :fggrid, :fgcolor_grid, :fg_color_grid, :foreground_grid,
                             :foreground_colour_grid, :fgcolour_grid, :fg_colour_grid, :gridcolor)
+add_aliases(:foreground_color_minor_grid, :fg_minor_grid, :fgminorgrid, :fgcolor_minorgrid, :fg_color_minorgrid, :foreground_minorgrid,
+                            :foreground_colour_minor_grid, :fgcolour_minorgrid, :fg_colour_minor_grid, :minorgridcolor)
 add_aliases(:foreground_color_title, :fg_title, :fgtitle, :fgcolor_title, :fg_color_title, :foreground_title,
                             :foreground_colour_title, :fgcolour_title, :fg_colour_title, :titlecolor)
 add_aliases(:foreground_color_axis, :fg_axis, :fgaxis, :fgcolor_axis, :fg_color_axis, :foreground_axis,
@@ -576,6 +582,8 @@ add_aliases(:inset_subplots, :inset, :floating)
 add_aliases(:stride, :wirefame_stride, :surface_stride, :surf_str, :str)
 add_aliases(:gridlinewidth, :gridwidth, :grid_linewidth, :grid_width, :gridlw, :grid_lw)
 add_aliases(:gridstyle, :grid_style, :gridlinestyle, :grid_linestyle, :grid_ls, :gridls)
+add_aliases(:minorgridlinewidth, :minorgridwidth, :minorgrid_linewidth, :minorgrid_width, :minorgridlw, :minorgrid_lw)
+add_aliases(:minorgridstyle, :minorgrid_style, :minorgridlinestyle, :minorgrid_linestyle, :minorgrid_ls, :minorgridls)
 add_aliases(:framestyle, :frame_style, :frame, :axesstyle, :axes_style, :boxstyle, :box_style, :box, :borderstyle, :border_style, :border)
 add_aliases(:tick_direction, :tickdirection, :tick_dir, :tickdir, :tick_orientation, :tickorientation, :tick_or, :tickor)
 add_aliases(:camera, :cam, :viewangle, :view_angle)
@@ -770,6 +778,34 @@ end
 
 function processGridArg!(d::KW, arg, letter)
     if arg in _allGridArgs || isa(arg, Bool)
+        d[Symbol(letter, :grid)] = hasgrid(arg, letter)
+
+    elseif allStyles(arg)
+        d[Symbol(letter, :gridstyle)] = arg
+
+    elseif typeof(arg) <: Stroke
+        arg.width == nothing || (d[Symbol(letter, :gridlinewidth)] = arg.width)
+        arg.color == nothing || (d[Symbol(letter, :foreground_color_grid)] = arg.color in (:auto, :match) ? :match : plot_color(arg.color))
+        arg.alpha == nothing || (d[Symbol(letter, :gridalpha)] = arg.alpha)
+        arg.style == nothing || (d[Symbol(letter, :gridstyle)] = arg.style)
+
+    # linealpha
+    elseif allAlphas(arg)
+        d[Symbol(letter, :gridalpha)] = arg
+
+    # linewidth
+    elseif allReals(arg)
+        d[Symbol(letter, :gridlinewidth)] = arg
+
+    # color
+    elseif !handleColors!(d, arg, Symbol(letter, :foreground_color_grid))
+        warn("Skipped grid arg $arg.")
+
+    end
+end
+
+function processMinorGridArg!(d::KW, arg, letter)
+    if arg in _allMinorGridArgs || isa(arg, Bool)
         d[Symbol(letter, :grid)] = hasgrid(arg, letter)
 
     elseif allStyles(arg)
